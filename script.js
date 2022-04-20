@@ -11,21 +11,16 @@ const inputElevation = document.querySelector('.form__input--elevation');
 class Workout {
   date = new Date()
   id = (Date.now() + '').slice(-10)
-  clicks = 0
+
   constructor(coords, distance, duration) {
     this.coords = coords // [lat, lng]
     this.distance = distance // in km
     this.duration = duration // in min
-
   }
 
   _setDescription() {
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     this.description = `${this.type[0].toUpperCase()}${this.type.slice(1)} on ${months[this.date.getMonth()]} ${this.date.getDate()}`
-  }
-
-  click() {
-    this.clicks++
   }
 }
 
@@ -68,7 +63,11 @@ class App {
   #mapZoom = 13
   #workouts = []
   constructor() {
+    // get user position
     this._getPosition();
+    // get data from local storage
+    this._getLocalStorage()
+    // attach event handler
     form.addEventListener('submit', this._newWorkout.bind(this))
     inputType.addEventListener('change', this._toggleElevaionField)
     containerWorkouts.addEventListener('click', this._moveToPoup.bind(this))
@@ -94,7 +93,9 @@ class App {
 
     //hanlding clicks on map
     this.#map.on('click', this._showForm.bind(this))
-
+    this.#workouts.forEach(work => {
+      this._renderWorkoutMarker(work)
+    })
   }
 
   _showForm(mapE) {
@@ -152,11 +153,12 @@ class App {
 
     }
     this.#workouts.push(workout)
-    console.log(workout);
     this._renderWorkoutMarker(workout)
     this._renderWorkout(workout)
     this._hideForm()
 
+    // Set local storage to all workouts
+    this._setLocalStorage()
   }
 
   _renderWorkoutMarker(workout) {
@@ -226,22 +228,31 @@ class App {
     const workoutEl = e.target.closest('.workout')
     if (!workoutEl) return
     const workout = this.#workouts.find(work => work.id === workoutEl.dataset.id)
-    console.log(workout);
     this.#map.setView(workout.coords, this.#mapZoom, {
       animate: true,
       pan: {
         duration: 1
       }
     })
-
-    workout.click()
+  }
+  _setLocalStorage() {
+    localStorage.setItem('workouts', JSON.stringify(this.#workouts))
+  }
+  _getLocalStorage() {
+    const data = JSON.parse(localStorage.getItem('workouts'))
+    if (!data) return
+    this.#workouts = data
+    this.#workouts.forEach(work => {
+      this._renderWorkout(work)
+    })
+  }
+  reset() {
+    localStorage.removeItem('workouts')
+    location.reload()
   }
 }
 const app = new App()
 
-/* Checking if the browser supports geolocation and if it does, it will get the current position of the
-user. */
-// takes two functions, one for success and one for error
 
 
 
